@@ -1,0 +1,723 @@
+import React, { useState, useRef } from 'react';
+import { Trophy, Target, BookOpen, Star, Users, ArrowRight, CheckCircle, XCircle, Brain, Activity, Heart, RefreshCw, Award, Play, Zap, HelpCircle, Camera, Upload } from 'lucide-react';
+
+// ======================================================================
+// 老師請在此處修改設定
+// ======================================================================
+
+const TEACHER_CONFIG = {
+  // 【照片設定區】
+  // 方法 1 (推薦)：若您有圖片網址，直接貼在引號內。
+  // 方法 2 (單機版)：若您將網頁下載到電腦，請把照片放在同一個資料夾，並填入檔名 (如 "./my_photo.jpg")
+  // 方法 3 (進階)：您也可以使用 Base64 編碼字串直接貼入。
+  
+  heroImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Shohei_Ohtani_2022.jpg/600px-Shohei_Ohtani_2022.jpg",
+  
+  // 若照片無法顯示時的預設替代圖
+  fallbackImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Shohei_Ohtani_2022.jpg/600px-Shohei_Ohtani_2022.jpg"
+};
+
+// ----------------------------------------------------------------------
+// 數據與內容資料庫
+// ----------------------------------------------------------------------
+
+const ohtaniProfile = {
+  name: "大谷翔平 (Shohei Ohtani)",
+  title: "二刀流・職棒百年奇才",
+  imageUrl: TEACHER_CONFIG.heroImage, // 這裡會讀取上方的設定
+  stats: [
+    { id: 's1', label: "球速", value: "165 km/h", icon: <Activity className="w-8 h-8 text-white" /> },
+    { id: 's2', label: "紀錄", value: "超越貝比魯斯", icon: <Trophy className="w-8 h-8 text-white" /> },
+    { id: 's3', label: "特質", value: "謙虛・自律", icon: <Heart className="w-8 h-8 text-white" /> },
+  ],
+  description: "高中時就發下豪願要成為「日本第一」。他認為對偶像最好的致敬就是「超越」。不只天賦異稟，更擁有驚人的自律與苦練精神。"
+};
+
+const mandalaData = [
+  { id: 1, title: "體格", hint: "身體素質", detail: "鍛鍊身體，極致的肌肉與體能", color: "bg-blue-600 text-white" },
+  { id: 2, title: "控球", hint: "準度", detail: "精準控制每一球的落點", color: "bg-blue-600 text-white" },
+  { id: 3, title: "心理", hint: "心態", detail: "勝不驕敗不餒，強大的抗壓性", color: "bg-blue-600 text-white" },
+  { id: 4, title: "球速160", hint: "速度", detail: "超越極限的投球速度", color: "bg-blue-600 text-white" },
+  { id: 5, title: "八球團第一指名", hint: "核心目標", detail: "【核心目標】\n成為頂尖球隊的首選", isCenter: true, color: "bg-yellow-400 text-red-900 border-4 border-red-600" },
+  { id: 6, title: "人品", hint: "受人愛戴", detail: "愛惜球具、撿垃圾、有禮貌", color: "bg-blue-600 text-white" },
+  { id: 7, title: "運氣", hint: "撿垃圾", detail: "珍惜機緣，正面思考", color: "bg-blue-600 text-white" },
+  { id: 8, title: "變化球", hint: "多樣球路", detail: "多樣化的球路與尾勁", color: "bg-blue-600 text-white" },
+  { id: 9, title: "球質", hint: "尾勁", detail: "讓球難以被擊出的尾勁", color: "bg-blue-600 text-white" },
+];
+
+const valuesData = [
+  {
+    id: 'v1',
+    title: "興趣與熱情",
+    quote: "「人要做自己有興趣的事才會成功。」",
+    desc: "父親告訴他，不把打球當職業，而是當作最大的生活樂趣。",
+    icon: <Heart className="w-10 h-10" />,
+    color: "from-red-500 to-red-700"
+  },
+  {
+    id: 'v2',
+    title: "情緒管理",
+    quote: "「絕對不能拿球具來出氣。」",
+    desc: "摔手套只會影響團隊士氣，對實力提升毫無幫助。",
+    icon: <Brain className="w-10 h-10" />,
+    color: "from-blue-500 to-blue-700"
+  }
+];
+
+const quizQuestions = [
+  {
+    question: "大谷翔平認為對偶像（如菊池雄星、貝比魯斯）最好的致敬方式是什麼？",
+    options: ["模仿", "崇拜", "超越", "批評"],
+    answer: 2,
+    explanation: "文本提及：他認為對偶像最好的致敬就是「超越」，良性競爭、共同進步。"
+  },
+  {
+    question: "大谷的父親曾告誡他，就算比賽結果不滿意，也絕對「不能」做什麼事？",
+    options: ["哭泣", "拿球具出氣", "不吃飯", "拒絕採訪"],
+    answer: 1,
+    explanation: "文本提及：絕對不能拿球具來出氣，因為這種舉動只會影響團隊士氣，對實力提升無助益。"
+  },
+  {
+    question: "大谷翔平使用什麼方法來規劃自我的精進目標？",
+    options: ["心智圖法", "六頂思考帽", "九宮格思考法", "SWOT分析"],
+    answer: 2,
+    explanation: "文本提及：大谷透過「九宮格思考法」自我要求，將核心目標放在正中央。"
+  },
+  {
+    question: "關於大谷翔平的「二刀流」成就，下列敘述何者正確？",
+    options: ["只擅長投球", "只擅長打擊", "投打俱優", "擅長守備但不擅長打擊"],
+    answer: 2,
+    explanation: "二刀流原指雙手持刀的劍術，形容在投球與打擊兩方面都表現驚人。"
+  }
+];
+
+// ----------------------------------------------------------------------
+// 元件：頁面導航按鈕 (運動風)
+// ----------------------------------------------------------------------
+
+const NavButton = ({ active, onClick, icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`group relative flex flex-col items-center justify-center p-3 w-24 h-24 transition-all duration-300 transform skew-x-[-10deg] border-2 
+      ${active 
+        ? 'bg-red-600 border-red-800 text-white shadow-[4px_4px_0px_rgba(0,0,0,0.8)] translate-y-[-2px]' 
+        : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-100'
+      }`}
+  >
+    <div className="skew-x-[10deg] flex flex-col items-center">
+      <div className={`mb-1 transition-transform group-hover:scale-110 ${active ? 'scale-110' : ''}`}>{icon}</div>
+      <span className="text-xs font-black tracking-wider uppercase">{label}</span>
+    </div>
+  </button>
+);
+
+// ----------------------------------------------------------------------
+// 主程式
+// ----------------------------------------------------------------------
+
+export default function App() {
+  const [currentSection, setCurrentSection] = useState('video');
+  const [revealedMandala, setRevealedMandala] = useState([]);
+  const [revealedValues, setRevealedValues] = useState([]);
+  const [revealedStats, setRevealedStats] = useState([]);
+  const [showThinkingPoint, setShowThinkingPoint] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  
+  // 自定義圖片狀態
+  const [customImage, setCustomImage] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizScore, setQuizScore] = useState(0);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [quizFinished, setQuizFinished] = useState(false);
+
+  // 處理圖片上傳
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setCustomImage(imageUrl);
+      setImgError(false); // 重置錯誤狀態
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current.click();
+  };
+
+  // Toggle helpers
+  const toggleMandala = (id) => {
+    if (revealedMandala.includes(id)) {
+      setRevealedMandala(revealedMandala.filter(itemId => itemId !== id));
+    } else {
+      setRevealedMandala([...revealedMandala, id]);
+    }
+  };
+
+  const toggleValue = (id) => {
+    if (revealedValues.includes(id)) {
+      setRevealedValues(revealedValues.filter(x => x !== id));
+    } else {
+      setRevealedValues([...revealedValues, id]);
+    }
+  };
+
+  const toggleStat = (id) => {
+    if (revealedStats.includes(id)) return;
+    setRevealedStats([...revealedStats, id]);
+  };
+
+  // Quiz helpers
+  const resetQuiz = () => {
+    setQuizIndex(0);
+    setQuizScore(0);
+    setQuizFinished(false);
+    setShowExplanation(false);
+  };
+
+  const handleQuizAnswer = (optionIndex) => {
+    if (showExplanation) return;
+    if (optionIndex === quizQuestions[quizIndex].answer) {
+      setQuizScore(quizScore + 1);
+    }
+    setShowExplanation(true);
+  };
+
+  const nextQuestion = () => {
+    if (quizIndex < quizQuestions.length - 1) {
+      setQuizIndex(quizIndex + 1);
+      setShowExplanation(false);
+    } else {
+      setQuizFinished(true);
+    }
+  };
+
+  // ----------------------------------------------------------------------
+  // 渲染內容區塊
+  // ----------------------------------------------------------------------
+
+  const renderContent = () => {
+    switch (currentSection) {
+      // 0. 熱血開場 (影片)
+      case 'video':
+        return (
+          <div className="flex flex-col items-center justify-center h-full animate-fadeIn max-w-6xl mx-auto w-full">
+            <h2 className="text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-800 mb-6 uppercase tracking-widest transform -skew-x-6">
+              WARM UP : 職棒傳奇的誕生
+            </h2>
+            
+            <div className="w-full aspect-video bg-black rounded-xl shadow-[8px_8px_0px_#1e293b] border-4 border-gray-900 overflow-hidden mb-8">
+              <iframe 
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/THZF_oilZpA?rel=0" 
+                title="Shohei Ohtani Video" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              ></iframe>
+            </div>
+
+            <div className="w-full bg-white p-6 rounded-xl border-l-8 border-red-600 shadow-lg">
+              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-3">
+                <HelpCircle className="text-red-600" />
+                <span>觀看重點思考：</span>
+              </h3>
+              <p className="text-lg text-gray-700">
+                影片中提到大谷翔平同時挑戰「投手」與「打者」兩種身分（二刀流），為什麼大多數人認為這是不可能的任務？他又是如何克服的？
+              </p>
+            </div>
+          </div>
+        );
+
+      // 1. 傳奇登場
+      case 'intro':
+        return (
+          <div className="flex flex-col items-center justify-center h-full animate-fadeIn">
+            <div className="bg-white p-8 rounded-3xl shadow-[10px_10px_0px_rgba(0,0,0,0.2)] max-w-5xl w-full flex flex-col md:flex-row gap-8 items-center border-4 border-gray-900">
+              
+              {/* Photo Section with Upload Feature */}
+              <div className="w-full md:w-1/3 flex flex-col items-center relative group">
+                <div className="w-64 h-80 bg-gray-200 rounded-xl overflow-hidden shadow-inner border-4 border-blue-900 transform rotate-[-2deg] flex items-center justify-center bg-gray-100 relative">
+                  {!imgError || customImage ? (
+                    <img 
+                      // 優先顯示用戶現場上傳的 (customImage)，其次是老師設定的 (ohtaniProfile.imageUrl)，最後是預設備案
+                      src={customImage || ohtaniProfile.imageUrl || TEACHER_CONFIG.fallbackImage} 
+                      alt="Shohei Ohtani" 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={() => {
+                        if (!customImage) setImgError(true);
+                      }}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-gray-400 bg-gray-100 w-full h-full p-4 text-center">
+                      <Users className="w-20 h-20 mb-2 opacity-50" />
+                      <span className="font-bold text-sm">暫無圖片</span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-4 right-[-10px] bg-red-600 text-white px-4 py-1 font-black transform skew-x-[-10deg] shadow-lg">
+                    #17 SHOHEI
+                  </div>
+                </div>
+
+                {/* Upload Button */}
+                <div className="mt-4">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button 
+                    onClick={triggerFileInput}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full font-bold text-sm transition-colors shadow-sm"
+                  >
+                    <Camera className="w-4 h-4" />
+                    現場更換照片
+                  </button>
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    老師您也可以直接修改程式碼中的<br/> TEACHER_CONFIG 來預設照片
+                  </p>
+                </div>
+              </div>
+              
+              <div className="w-full md:w-2/3 space-y-6">
+                <h1 className="text-5xl font-black text-gray-900 italic tracking-tighter uppercase transform -skew-x-6">
+                  {ohtaniProfile.name.split(' (')[0]}
+                  <span className="block text-2xl text-red-600 mt-2 font-bold not-italic">{ohtaniProfile.title}</span>
+                </h1>
+                
+                <p className="text-xl text-gray-700 font-medium leading-relaxed border-l-4 border-blue-600 pl-4">
+                  {ohtaniProfile.description}
+                </p>
+
+                {/* Interactive Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                  {ohtaniProfile.stats.map((stat) => (
+                    <button 
+                      key={stat.id}
+                      onClick={() => toggleStat(stat.id)}
+                      className={`relative overflow-hidden p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center text-center
+                        ${revealedStats.includes(stat.id) 
+                          ? 'bg-blue-900 border-blue-900 scale-105 shadow-xl' 
+                          : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                        }`}
+                    >
+                      {!revealedStats.includes(stat.id) ? (
+                        <div className="flex flex-col items-center justify-center h-full">
+                           <span className="text-gray-400 font-bold text-lg">點擊揭曉</span>
+                           <div className="mt-2 w-8 h-8 bg-gray-300 rounded-full animate-pulse" />
+                        </div>
+                      ) : (
+                        <div className="animate-popIn">
+                          {stat.icon}
+                          <span className="text-blue-200 text-sm mt-2 font-bold uppercase tracking-wider">{stat.label}</span>
+                          <span className="text-2xl font-black text-white italic">{stat.value}</span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Interactive Question */}
+                <div className="mt-6">
+                   {!showThinkingPoint ? (
+                     <button 
+                      onClick={() => setShowThinkingPoint(true)}
+                      className="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-black rounded-lg shadow-[4px_4px_0px_#b45309] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 text-xl"
+                     >
+                       <Zap className="fill-current" />
+                       點擊挑戰：老師的終極提問
+                     </button>
+                   ) : (
+                     <div className="p-6 bg-yellow-50 border-4 border-yellow-400 rounded-lg animate-slideDown relative">
+                        <div className="absolute -top-3 left-6 bg-yellow-400 text-yellow-900 px-3 py-1 font-bold text-sm rounded">Q & A</div>
+                        <p className="text-xl font-bold text-gray-800">
+                          如果是你，當全世界都說「不可能」的時候，你會選擇放棄，還是像大谷一樣堅持？<br/>
+                          <span className="text-base font-normal text-gray-600 mt-2 block">
+                            (請回想一下，你曾經遇過什麼想放棄的時刻嗎？)
+                          </span>
+                        </p>
+                     </div>
+                   )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      // 2. 曼陀羅思考法
+      case 'mandala':
+        return (
+          <div className="flex flex-col h-full animate-fadeIn p-4">
+            <h2 className="text-4xl font-black text-center text-blue-900 mb-2 flex items-center justify-center gap-3 italic transform -skew-x-6">
+              <Target className="w-10 h-10 text-red-600" />
+              SUCCESS MAP：大谷的九宮格
+            </h2>
+            <p className="text-center text-gray-500 mb-6 font-bold uppercase tracking-widest">
+              觀察提示 → 猜測點擊 → 再次點擊可隱藏
+            </p>
+            
+            <div className="flex flex-col md:flex-row gap-12 items-center justify-center h-full">
+              {/* 九宮格互動區 */}
+              <div className="grid grid-cols-3 gap-2 w-full max-w-lg aspect-square mx-auto bg-gray-900 p-2 rounded-xl shadow-[12px_12px_0px_#cbd5e1]">
+                {mandalaData.map((item) => {
+                  const isRevealed = revealedMandala.includes(item.id) || item.isCenter;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => toggleMandala(item.id)}
+                      disabled={item.isCenter}
+                      className={`
+                        relative flex flex-col items-center justify-center p-1 text-center transition-all duration-300 overflow-hidden
+                        ${item.isCenter 
+                           ? item.color 
+                           : isRevealed 
+                             ? `${item.color} scale-100` 
+                             : 'bg-gray-200 hover:bg-gray-300 text-gray-400 scale-95'
+                        }
+                        ${!item.isCenter ? 'cursor-pointer hover:shadow-lg' : 'cursor-default'}
+                      `}
+                    >
+                      {isRevealed ? (
+                        <div className="animate-flipIn flex flex-col items-center justify-center h-full w-full">
+                           <span className="text-xl md:text-2xl font-black leading-tight">{item.title}</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center">
+                          <span className="text-xs md:text-sm font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded mb-1">
+                             提示
+                          </span>
+                          <span className="text-lg md:text-xl font-bold text-gray-600">{item.hint}</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 詳細說明顯示區 (動態對應最後點擊的項目) */}
+              <div className="w-full md:w-1/3 bg-white p-6 rounded-xl border-4 border-blue-900 shadow-[8px_8px_0px_#1e3a8a] min-h-[300px] flex flex-col justify-center relative">
+                <div className="absolute top-0 left-0 w-full h-4 bg-blue-900"></div>
+                {revealedMandala.length > 0 || mandalaData.find(d => d.isCenter) ? (
+                  <div className="animate-fadeIn">
+                     {(() => {
+                        // 顯示最後一個點擊的，如果沒有則顯示中心
+                        const lastId = revealedMandala.length > 0 ? revealedMandala[revealedMandala.length - 1] : 5;
+                        const activeItem = mandalaData.find(d => d.id === lastId);
+                        
+                        // 如果最後一個被關閉了，顯示中心
+                        const displayItem = activeItem || mandalaData.find(d => d.isCenter);
+
+                        return (
+                          <>
+                            <h3 className="text-3xl font-black text-gray-900 mb-4 flex items-center gap-2">
+                               <span className="w-4 h-8 bg-red-600 block skew-x-[-12deg]"></span>
+                               {displayItem.title}
+                            </h3>
+                            <p className="text-xl text-gray-700 font-bold leading-relaxed">
+                              {displayItem.detail}
+                            </p>
+                            {displayItem.title === "人品" && (
+                              <div className="mt-6 p-4 bg-gray-100 rounded border-l-4 border-gray-500 text-gray-600 italic">
+                                「撿垃圾就是撿起別人丟掉的運氣。」
+                              </div>
+                            )}
+                          </>
+                        );
+                     })()}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400">
+                    <p className="text-xl font-bold">請點擊左側九宮格<br/>開始你的修煉</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      // 3. 關鍵態度
+      case 'values':
+        return (
+          <div className="flex flex-col items-center justify-center h-full animate-fadeIn max-w-5xl mx-auto px-4">
+            <h2 className="text-4xl font-black text-gray-900 mb-10 uppercase italic transform -skew-x-6">
+              MINDSET：強者的心態
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+              {valuesData.map((val) => (
+                <button 
+                  key={val.id}
+                  onClick={() => toggleValue(val.id)}
+                  className={`relative overflow-hidden rounded-2xl shadow-xl transition-all duration-500 text-left group
+                    ${revealedValues.includes(val.id) ? 'h-auto md:h-80' : 'h-32 md:h-80'}
+                  `}
+                >
+                  {/* Background Gradient */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${val.color} opacity-90 transition-opacity`}></div>
+                  
+                  <div className="relative p-8 h-full flex flex-col justify-center text-white z-10">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-white/20 backdrop-blur rounded-full">
+                        {val.icon}
+                      </div>
+                      <h3 className="text-3xl font-black tracking-wider uppercase">{val.title}</h3>
+                    </div>
+
+                    {revealedValues.includes(val.id) ? (
+                      <div className="animate-slideUp">
+                        <p className="text-2xl font-bold mb-4 italic leading-relaxed border-l-4 border-white pl-4">
+                          {val.quote}
+                        </p>
+                        <p className="text-lg opacity-90">
+                          {val.desc}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="absolute bottom-8 right-8 animate-bounce opacity-70">
+                        <span className="text-sm font-bold uppercase tracking-widest border px-3 py-1 rounded">Click to Expand</span>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-12 bg-gray-900 text-white p-6 rounded-xl max-w-3xl text-center shadow-[8px_8px_0px_#94a3b8] transform skew-x-[-2deg]">
+              <div className="skew-x-[2deg]">
+                <h4 className="text-xl font-black text-yellow-400 mb-2 uppercase">Coach's Note</h4>
+                <p className="text-lg font-medium">
+                  真正的強者，不只鍛鍊肌肉，更鍛鍊「心」。<br/>控制情緒，對工具保持敬意，這就是大谷的自律。
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      // 4. 九宮格小挑戰
+      case 'workshop':
+        return (
+          <div className="flex flex-col h-full animate-fadeIn p-4 overflow-y-auto">
+            <h2 className="text-3xl font-black text-center text-gray-900 mb-8 flex items-center justify-center gap-3 italic transform -skew-x-6 uppercase">
+              <Users className="w-10 h-10 text-indigo-600" />
+              Challenge：九宮格小挑戰
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto w-full h-full items-center">
+              {/* 任務說明 */}
+              <div className="bg-white p-8 rounded-3xl shadow-lg border-l-8 border-indigo-600 h-fit">
+                <h3 className="text-2xl font-black text-indigo-900 mb-6 uppercase">
+                  老師 vs 學生
+                </h3>
+                <div className="space-y-6 text-xl text-gray-700 font-medium">
+                   <p>
+                     現在，我們全班一起來完成一個屬於我們的九宮格！
+                   </p>
+                   <div className="p-4 bg-indigo-50 rounded-lg border-2 border-indigo-100">
+                      <strong className="block text-indigo-700 mb-2">步驟 1：定目標</strong>
+                      請老師邀請同學提議，設定一個國中三年的「大目標」。
+                   </div>
+                   <div className="p-4 bg-indigo-50 rounded-lg border-2 border-indigo-100">
+                      <strong className="block text-indigo-700 mb-2">步驟 2：想策略</strong>
+                      為了達成這個目標，我們需要哪 8 個具體的行動？
+                   </div>
+                   <div className="flex items-center gap-2 text-sm text-gray-500 mt-4">
+                     <Zap className="w-4 h-4" />
+                     <span>請直接使用電子白板的畫筆功能在右側填寫</span>
+                   </div>
+                </div>
+              </div>
+
+              {/* 白板區 */}
+              <div className="bg-slate-800 p-8 rounded-3xl shadow-[10px_10px_0px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center text-white relative">
+                 {/* 裝飾釘子 */}
+                 <div className="absolute top-4 left-4 w-3 h-3 rounded-full bg-gray-500 shadow-inner"></div>
+                 <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-gray-500 shadow-inner"></div>
+                 
+                 <h3 className="text-2xl font-bold mb-6 text-yellow-400 uppercase tracking-widest">Interactive Board</h3>
+                 
+                 <div className="grid grid-cols-3 gap-2 w-full max-w-md aspect-square bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+                    {[...Array(9)].map((_, i) => (
+                      <div key={i} className={`
+                        border-2 border-dashed border-gray-400/50 rounded flex items-center justify-center
+                        ${i === 4 ? 'bg-yellow-500/20 border-yellow-400 border-solid' : 'bg-transparent'}
+                      `}>
+                         {i === 4 && <span className="text-yellow-400 font-black text-lg">核心目標</span>}
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      // 5. 隨堂測驗
+      case 'quiz':
+        return (
+          <div className="flex flex-col items-center justify-center h-full animate-fadeIn max-w-4xl mx-auto w-full px-4">
+            {!quizFinished ? (
+              <div className="w-full bg-white rounded-3xl shadow-[8px_8px_0px_#2563eb] overflow-hidden border-2 border-blue-600">
+                {/* 頂部進度條 */}
+                <div className="bg-blue-600 p-4 text-white flex justify-between items-center">
+                  <span className="text-xl font-black italic">QUESTION {quizIndex + 1}</span>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-300" />
+                    <span className="font-bold text-xl">{quizScore}</span>
+                  </div>
+                </div>
+                
+                <div className="p-8 md:p-12">
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 leading-relaxed">
+                    {quizQuestions[quizIndex].question}
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {quizQuestions[quizIndex].options.map((option, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleQuizAnswer(idx)}
+                        disabled={showExplanation}
+                        className={`
+                          p-6 text-xl rounded-xl border-4 transition-all text-left font-bold relative overflow-hidden
+                          ${showExplanation 
+                            ? idx === quizQuestions[quizIndex].answer
+                              ? 'bg-green-100 border-green-500 text-green-800'
+                              : idx === quizQuestions[quizIndex].options.indexOf(option) 
+                                ? 'opacity-50' 
+                                : 'opacity-50'
+                            : 'bg-white border-gray-100 hover:border-blue-500 hover:bg-blue-50 text-gray-700 shadow-sm hover:shadow-md'
+                          }
+                        `}
+                      >
+                        <div className="flex items-center gap-3 z-10 relative">
+                          <span className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-black text-gray-600">
+                            {['A','B','C','D'][idx]}
+                          </span>
+                          {option}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {showExplanation && (
+                    <div className="mt-8 p-6 bg-green-50 rounded-xl border-2 border-green-400 animate-slideUp shadow-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="text-green-600 w-8 h-8" />
+                        <span className="font-black text-green-800 text-xl uppercase">Correct!</span>
+                      </div>
+                      <p className="text-xl text-gray-800 font-medium">{quizQuestions[quizIndex].explanation}</p>
+                      <button 
+                        onClick={nextQuestion}
+                        className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-[4px_4px_0px_#1e3a8a]"
+                      >
+                        NEXT LEVEL <ArrowRight />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white p-12 rounded-3xl shadow-[12px_12px_0px_#ca8a04] text-center max-w-2xl w-full border-4 border-yellow-500">
+                <div className="w-32 h-32 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Award className="w-16 h-16 text-yellow-600" />
+                </div>
+                <h2 className="text-5xl font-black text-gray-900 mb-4 italic uppercase">Game Over</h2>
+                <p className="text-2xl text-gray-600 mb-8 font-bold">
+                  FINAL SCORE: <span className="text-blue-600 text-5xl">{quizScore}</span> / {quizQuestions.length}
+                </p>
+                
+                <div className="p-6 bg-gray-100 rounded-xl mb-8 text-left border-l-8 border-gray-400">
+                  <h4 className="font-black text-gray-700 mb-2 uppercase tracking-wide">Takeaway</h4>
+                  <ul className="list-disc pl-5 space-y-2 text-gray-600 font-medium">
+                    <li>九宮格思考：拆解大目標</li>
+                    <li>自律與苦練：天才的基石</li>
+                    <li>超越偶像：不設限的成長</li>
+                  </ul>
+                </div>
+
+                <button 
+                  onClick={resetQuiz}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl text-xl font-black flex items-center gap-2 mx-auto transition-transform active:scale-95 shadow-[4px_4px_0px_#1e3a8a]"
+                >
+                  <RefreshCw /> REPLAY
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  // ----------------------------------------------------------------------
+  // 主畫面 Layout
+  // ----------------------------------------------------------------------
+
+  return (
+    <div className="flex h-screen bg-slate-100 font-sans text-gray-900 overflow-hidden select-none">
+      {/* 側邊導航欄 (Sticky Left) */}
+      <nav className="w-28 md:w-36 bg-white border-r-4 border-gray-200 flex flex-col items-center py-6 gap-4 z-50 shadow-2xl relative">
+        <div className="mb-6 transform hover:scale-110 transition-transform cursor-pointer" onClick={() => setCurrentSection('video')}>
+          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-black text-3xl shadow-lg border-4 border-white ring-4 ring-red-600">
+            17
+          </div>
+        </div>
+        
+        <NavButton 
+          active={currentSection === 'video'} 
+          onClick={() => setCurrentSection('video')} 
+          icon={<Play className="w-6 h-6" />} 
+          label="熱血開場" 
+        />
+        <NavButton 
+          active={currentSection === 'intro'} 
+          onClick={() => setCurrentSection('intro')} 
+          icon={<Trophy className="w-6 h-6" />} 
+          label="傳奇登場" 
+        />
+        <NavButton 
+          active={currentSection === 'mandala'} 
+          onClick={() => setCurrentSection('mandala')} 
+          icon={<Target className="w-6 h-6" />} 
+          label="成功密碼" 
+        />
+        <NavButton 
+          active={currentSection === 'values'} 
+          onClick={() => setCurrentSection('values')} 
+          icon={<Star className="w-6 h-6" />} 
+          label="關鍵態度" 
+        />
+        <NavButton 
+          active={currentSection === 'workshop'} 
+          onClick={() => setCurrentSection('workshop')} 
+          icon={<Users className="w-6 h-6" />} 
+          label="九宮格挑戰" 
+        />
+        <NavButton 
+          active={currentSection === 'quiz'} 
+          onClick={() => setCurrentSection('quiz')} 
+          icon={<BookOpen className="w-6 h-6" />} 
+          label="隨堂測驗" 
+        />
+      </nav>
+
+      {/* 主要內容區 */}
+      <main className="flex-1 relative overflow-hidden bg-slate-100">
+        {/* 動態背景元素 (Sports Lines) */}
+        <div className="absolute top-0 right-0 w-full h-full pointer-events-none opacity-5">
+           <div className="w-[150%] h-64 bg-black rotate-[-12deg] absolute -top-20 -right-20"></div>
+           <div className="w-[150%] h-12 bg-red-600 rotate-[-12deg] absolute top-48 -right-20"></div>
+           <div className="w-[150%] h-12 bg-blue-600 rotate-[-12deg] absolute bottom-20 -left-20"></div>
+        </div>
+
+        <div className="h-full p-4 md:p-8 overflow-y-auto relative z-10 scrollbar-hide">
+          {renderContent()}
+        </div>
+      </main>
+    </div>
+  );
+}
