@@ -60,16 +60,16 @@
     const { useState, useRef, useEffect } = React;
 
     // ======================================================================
-    // 【老師設定區】請在這裡設定您的圖片檔名
+    // 【老師設定區】路徑修正
     // ======================================================================
 
     const TEACHER_CONFIG = {
-      // 設定 1：主要照片檔名
-      // 請將您的照片改名為 "大谷翔平.jpeg"，並放在與此 html 檔案同一個資料夾內。
-      // 如果您的副檔名是 .jpg 或 .png，請記得修改這裡 (例如 "./大谷翔平.jpg")
-      heroImage: "./大谷翔平.jpeg", 
+      // 設定 1：主要照片路徑
+      // 根據您的描述，照片在名為 image 的資料夾內
+      // 請確認您的 GitHub 上的資料夾名稱是 "image" 且檔名是 "大谷翔平.jpeg" (注意大小寫)
+      heroImage: "./image/大谷翔平.jpeg", 
       
-      // 設定 2：備用圖片 (當找不到您的照片時，會顯示這張網路圖片)
+      // 設定 2：備用圖片 (當路徑錯誤時顯示這張)
       fallbackImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Shohei_Ohtani_2022.jpg/600px-Shohei_Ohtani_2022.jpg"
     };
 
@@ -322,7 +322,6 @@
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           referrerPolicy="no-referrer"
                           onError={() => {
-                            // 若是讀取 customImage 失敗，則不設定 imgError，而是 fallback 到預設圖
                             if (customImage) {
                               setCustomImage(null);
                             } else {
